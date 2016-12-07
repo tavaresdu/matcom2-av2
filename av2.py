@@ -1,6 +1,5 @@
 from tabulate import tabulate
 from math import *
-import parser
 import sys
 
 def print_table(header, rows):
@@ -101,5 +100,5 @@ Linha 2: X inicial, X final, Y inicial e H (separados por virgula)
 (H = o intervalo entre cada valor de X)
 
 Ex. input.txt:
-2x - 3
-0, 4, 1, 0.1''')
+-2*x**3 + 12*x**2 - 20*x + 8.5
+0, 4, 1, 0.5''')
