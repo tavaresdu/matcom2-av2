@@ -1,3 +1,4 @@
+from sympy import Symbol, integrate, lambdify
 from tabulate import tabulate
 from math import *
 import sys
@@ -5,21 +6,27 @@ import sys
 def print_table(header, rows):
     print(tabulate(rows, headers=header, tablefmt='grid'))
 
-def euler(f, x, xn, y, h, err):
-    header = ['X', 'Y']
+def euler(fd, f, x, xn, y, h, err):
+    header = ['X', 'Y Real', 'Y', 'Erro']
     rows = list()
 
     while round(xn, err) >= round(x, err):
-        rows.append([round(x, err), round(y, err)])
+        yo = f(x, 0)
+        g_err = ((yo - y) / yo) * 100
 
-        y = y + h * f(x)
+        rows.append([round(x, err), round(yo, err),
+            round(y, err), round(g_err, err)])
+
+        y = y + h * fd(x)
         x = x + h
+
 
     print_table(header, rows)
 
-def rungekutta2(f, x, xn, y, h, err):
-    header = ['X', 'Y (Heun)', 'Y (Ponto Médio)', 'Y (Ralston)',
-        'K1', 'K2 (Heun)', 'K2 (Ponto Médio)', 'K2 (Ralston)']
+def rungekutta2(fd, f, x, xn, y, h, err):
+    header = ['X', 'Y Real', 'Y (Heun)', 'Y (Ponto Médio)', 'Y (Ralston)',
+        'K1', 'K2 (Heun)', 'K2 (Ponto Médio)', 'K2 (Ralston)', 'Erro (Heun)',
+        'Erro (Ponto Médio)', 'Erro (Ralston)']
     rows = list()
 
     yh = y
@@ -27,14 +34,19 @@ def rungekutta2(f, x, xn, y, h, err):
     yr = y
 
     while round(xn, err) >= round(x, err):
-        k1 = f(x, y)
-        k2h = f(x + h, y + k1*h)
-        k2m = f(x + h/2, y + k1*(h/2))
-        k2r = f(x + 3*h/4, y + k1*(3*h/4))
+        k1 = fd(x, 0)
+        k2h = fd(x + h, y + k1*h)
+        k2m = fd(x + h/2, y + k1*(h/2))
+        k2r = fd(x + 3*h/4, y + k1*(3*h/4))
+        yo = f(x, y)
+        g_err_h = ((yo - yh) / yo) * 100
+        g_err_m = ((yo - ym) / yo) * 100
+        g_err_r = ((yo - yr) / yo) * 100
 
-        rows.append([round(x, err), round(yh, err), round(ym, err),
-            round(yr, err), round(k1, err), round(k2h, err),
-            round(k2m, err), round(k2r, err)])
+        rows.append([round(x, err), round(yo, err), round(yh, err),
+            round(ym, err), round(yr, err), round(k1, err), round(k2h, err),
+            round(k2m, err), round(k2r, err), round(g_err_h, err),
+            round(g_err_m, err), round(g_err_r, err)])
 
         x = x + h
         yh = yh + (k1/2 + k2h/2) * h
@@ -43,18 +55,21 @@ def rungekutta2(f, x, xn, y, h, err):
 
     print_table(header, rows)
 
-def rungekutta4(f, x, xn, y, h, err):
-    header = ['X', 'Y', 'K1', 'K2', 'K3', 'K4']
+def rungekutta4(fd, f, x, xn, y, h, err):
+    header = ['X', 'Y Real', 'Y', 'K1', 'K2', 'K3', 'K4', 'Erro']
     rows = list()
 
     while round(xn, err) >= round(x, err):
-        k1 = f(x, y)
-        k2 = f(x + (h/2), y + h/2 * k1)
-        k3 = f(x + (h/2), y + h/2 * k2)
-        k4 = f(x + h, y + h * k3)
+        k1 = fd(x, 0)
+        k2 = fd(x + (h/2), y + h/2 * k1)
+        k3 = fd(x + (h/2), y + h/2 * k2)
+        k4 = fd(x + h, y + h * k3)
+        yo = f(x, 0)
+        g_err = ((yo - y) / yo) * 100
 
-        rows.append([round(x, err), round(y, err), round(k1, err),
-            round(k2, err), round(k3, err), round(k4, err)])
+        rows.append([round(x, err), round(yo, err), round(y, err),
+            round(k1, err), round(k2, err), round(k3, err),
+            round(k4, err), round(g_err, err)])
 
         x = x + h
         y = y + (h/6) * (k1 + (2*k2) + (2*k3) + k4)
@@ -77,10 +92,18 @@ if __name__ == '__main__' and len(sys.argv) == 3:
         for i, value in enumerate(values):
             values[i] = float(value)
 
-    def f(x, y=None):
+    icogx = Symbol('x')
+    icogy = Symbol('y')
+    integral = integrate(equation, icogx)
+    f = lambdify((icogx, icogy), integral)
+    result = float(f(values[0], 0))
+    diff = values[2] - result
+    fl = lambda x, y: f(x, y) + diff
+
+    def fd(x, y=None):
         return eval(equation)
 
-    alg_func(f, values[0], values[1], values[2], values[3], 10)
+    alg_func(fd, fl, values[0], values[1], values[2], values[3], 4)
 else:
     print('''\
 Como usar:
